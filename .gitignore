@@ -25,3 +25,8 @@ replay_pid*
 
 # IDE specific files
 .vscode/
+
+#Database files
+*.mv.db
+*.trace.db
+*.log
