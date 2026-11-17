@@ -36,17 +36,14 @@ public class TransactionController {
         return repository.findAll();
     }
 
-        @PostMapping
+    @PostMapping
     public ResponseEntity<?> create(@RequestBody NewTransactionRequest request) {
         String problem = service.validate(request.date(), request.description(), request.amount());
         if (problem != null) {
             return ResponseEntity.badRequest().body(Map.of("error", problem));
         }
-        Transaction toSave = new Transaction(null, request.date(), request.description().trim(),
-                request.amount(), null, "MANUAL");
-        long id = repository.insert(toSave);
-        Transaction saved = new Transaction(id, toSave.date(), toSave.description(),
-                toSave.amount(), toSave.category(), toSave.source());
+        Transaction saved = service.create(request.date(), request.description(), request.amount());
+
         return ResponseEntity.status(201).body(saved);
     }
 }

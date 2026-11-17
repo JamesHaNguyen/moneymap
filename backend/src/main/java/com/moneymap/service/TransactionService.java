@@ -16,6 +16,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.moneymap.model.CategoryRule;
 import com.moneymap.model.Transaction;
 import com.moneymap.repository.TransactionRepository;
 
@@ -26,9 +27,11 @@ public class TransactionService {
     }
 
     private final TransactionRepository repository;
+    private final CategoryService categories;
 
-    public TransactionService(TransactionRepository repository) {
+    public TransactionService(TransactionRepository repository, CategoryService categories) {
         this.repository = repository;
+        this.categories = categories;
     }
 
     public String validate(LocalDate date, String description, BigDecimal amount) {
@@ -50,6 +53,7 @@ public class TransactionService {
                 .setTrim(true)
                 .get();
 
+        List<CategoryRule> rules = categories.loadRules();
         int row = 0;
         try (CSVParser parser = CSVParser.parse(new InputStreamReader(in, StandardCharsets.UTF_8), format)) {
             for (CSVRecord record : parser) {
@@ -62,7 +66,8 @@ public class TransactionService {
                     if (problem != null) {
                         errors.add("Row " + row + ": " + problem);
                     } else {
-                        rows.add(new Transaction(null, date, description, amount, null, "CSV"));
+                        rows.add(new Transaction(null, date, description, amount,
+                                categories.categorize(description, rules), "CSV"));
                     }
                 } catch (DateTimeParseException | IllegalArgumentException e) {
                     errors.add("Row " + row + ": invalid value (" + e.getMessage() + ")");
@@ -77,5 +82,13 @@ public class TransactionService {
         }
         rows.forEach(repository::insert);
         return new ImportResult(rows.size(), List.of());
+    }
+
+        public Transaction create(LocalDate date, String description, BigDecimal amount) {
+        String clean = description.trim();
+        String category = categories.categorize(clean, categories.loadRules());
+        Transaction toSave = new Transaction(null, date, clean, amount, category, "MANUAL");
+        long id = repository.insert(toSave);
+        return new Transaction(id, date, clean, amount, category, "MANUAL");
     }
 }
