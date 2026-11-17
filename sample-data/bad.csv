@@ -1,0 +1,3 @@
+date,description,amount
+2026-10-01,Grocery Store,-52.30
+not-a-date,Broken row,abc

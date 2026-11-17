@@ -30,3 +30,4 @@ replay_pid*
 *.mv.db
 *.trace.db
 *.log
+backend/data/

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.moneymap.model.Transaction;
 import com.moneymap.repository.TransactionRepository;
+import com.moneymap.service.TransactionService;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -23,9 +24,11 @@ public class TransactionController {
     }
 
     private final TransactionRepository repository;
+    private final TransactionService service;
 
-    public TransactionController(TransactionRepository repository) {
+    public TransactionController(TransactionRepository repository, TransactionService service) {
         this.repository = repository;
+        this.service = service;
     }
 
     @GetMapping
@@ -35,10 +38,9 @@ public class TransactionController {
 
         @PostMapping
     public ResponseEntity<?> create(@RequestBody NewTransactionRequest request) {
-        if (request.date() == null || request.amount() == null
-                || request.description() == null || request.description().isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", "date, description and amount are required"));
+        String problem = service.validate(request.date(), request.description(), request.amount());
+        if (problem != null) {
+            return ResponseEntity.badRequest().body(Map.of("error", problem));
         }
         Transaction toSave = new Transaction(null, request.date(), request.description().trim(),
                 request.amount(), null, "MANUAL");
